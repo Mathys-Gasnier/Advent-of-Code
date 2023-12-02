@@ -68,6 +68,3 @@ for (const instruction of instructions) {
 
 console.log(`Part 1: ${visitedPartOne.size}`);
 console.log(`Part 2: ${visitedPartTwo.size}`);
-
-// 6081
-// 2487
