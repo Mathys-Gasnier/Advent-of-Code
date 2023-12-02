@@ -21,6 +21,5 @@ for game in content.split("\n"):
     
     if not not_possible:
         total += int(game_id)
-    print(game_id + ": " + str(not_possible))
 
 print("total: " + str(total))
