@@ -1,4 +1,5 @@
 import sys
+import threading
 
 with open("input.txt") as file:
     content = file.read()
@@ -11,7 +12,7 @@ seeds = [
 
 seeds_ranged = []
 for i in range(0, len(seeds), 2):
-    seeds_ranged.append([ seeds[i], seeds[i+1] ])
+    seeds_ranged.append(range(seeds[i], seeds[i] + seeds[i+1]))
 
 maps = [
     
@@ -45,53 +46,37 @@ print(f"Part 1: {mini}")
 
 mini = sys.maxsize ** 100
 
-def pass_seed_range(map, R):
-    A = []
-    for r in map:
-        dest = r[0]
-        src = r[1]
-        src_end = r[1] + r[2]
-        NR = []
-        while R:
-            start, size = R.pop()
-            end = start + size
-            before = [ start, min(end, src) ]
-            inner = [ max(start, src), min(src_end, end) ]
-            after = [ max(src_end, start), end ]
-            if before[1] > before[0]:
-                NR.append(before)
-            elif inner[1] > inner[0]:
-                A.append([ inner[0] - src + dest, inner[1] - src + dest ])
-            elif after[1] > after[0]:
-                NR.append(after)
+def pass_seed_range(seed_range, results, idx):
+    m = sys.maxsize ** 100
+    l = 0
+    n = seed_range.stop - seed_range.start
+    for seed in seed_range:
+        if (seed - seed_range.start) / n > l + 0.05:
+            l += 0.05
+            print(f"{idx} thread is {round(l * 100)}% done")
+        position = pass_seed(seed)
+        if position < m:
+            m = position
     
-        R = NR
-        
-    return A + R
-    # i = seed[0]
-    # while i < seed[0] + seed[1]:
-    #     print(i)
-    #     x = i
-    #     i = -1
-    #     for map in maps:
-    #         for r in map:
-    #             if x >= r[1] and x - r[1] < r[2]:
-    #                 if i == -1:
-    #                     i = r[1] + r[2]
-    #                 x = x - r[1] + r[0]
-    #                 break
-    #     print(x)
-    #     if x < min:
-    #         min = x
+    results[idx] = m
+    print(f"Thread {idx} finished")
 
-part_2 = []
-for seed_range in seeds_ranged:
-    print(seed_range)
-    R = [ seed_range ]
-    for m in maps:
-        R = pass_seed_range(m, R)
+part_2_threads = { }
+part_2_results = { }
+for idx, seed_range in enumerate(seeds_ranged):
+    print(f"Started range: {seed_range} as idx {idx}")
+    l = seed_range.stop - seed_range.start
+    first_range = range(seed_range.start, seed_range.start + round(l / 2))
+    first_thread = threading.Thread(target=pass_seed_range, args=(first_range, part_2_results, idx * 2))
+    first_thread.start()
+    part_2_threads[idx * 2] = first_thread
     
-    print(R)
-    part_2.append(min(ranges)[0])
+    second_range = range(seed_range.start + round(l / 2), seed_range.stop)
+    second_thread = threading.Thread(target=pass_seed_range, args=(second_range, part_2_results, idx * 2 + 1))
+    second_thread.start()
+    part_2_threads[idx * 2 + 1] = second_thread
 
-print(f"Part 2: {min(part_2)}")
+for idx, thread in part_2_threads.items():
+    thread.join()
+
+print(f"Part 2: {min(part_2_results.values())}")
